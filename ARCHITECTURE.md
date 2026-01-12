@@ -1,0 +1,49 @@
+# System Architecture
+
+## 1. System Diagram
+
+The system follows an Event-Driven Microservices Architecture composed of 6 containerized services:
+
+1.  **Ingester Service**: Simulates social media data streams (Twitter/Reddit) and publishes to Redis Streams.
+2.  **Redis (Message Broker)**:
+    - **Streams**: Buffers high-velocity ingestion data using Consumer Groups.
+    - **Pub/Sub**: Broadcasts real-time events to the frontend.
+3.  **Worker Service**: The AI brain. Consumes from Redis, processes text using Hugging Face Transformers (DistilBERT/RoBERTa), and saves to Postgres.
+4.  **Database (PostgreSQL)**: Persistent storage for posts, analysis results, and alerts.
+5.  **Backend API (FastAPI)**: Serves REST endpoints and manages WebSocket connections.
+6.  **Frontend (React/Vite)**: Real-time visualization dashboard using WebSockets.
+
+## 2. Data Flow Pipeline
+
+1.  **Ingestion**: `Ingester` generates a post -> Publishes to Redis Stream `social_posts_stream`.
+2.  **Processing**: `Worker` reads from Stream -> Runs AI Models -> Detects Sentiment & Emotion.
+3.  **Storage**: Worker saves result to `PostgreSQL` tables (`social_media_posts`, `sentiment_analysis`).
+4.  **Real-Time Push**: Worker publishes event to Redis Channel `sentiment_updates` -> Backend forwards to WebSockets.
+5.  **Alerting**: Backend runs background task -> Checks database aggregates -> Triggers `SentimentAlert` if negative ratio > 0.5.
+
+## 3. Technology Choices
+
+- **FastAPI**: Chosen for native async support and automatic documentation.
+- **Redis Streams**: Selected for at-least-once delivery guarantees via Consumer Groups.
+- **PostgreSQL**: Required for complex relational queries and time-series aggregation (`date_trunc`).
+- **Hugging Face**: Local inference avoids external API costs and latency.
+
+```mermaid
+graph TD
+    A[Ingester] -->|Writes to Stream| B(Redis)
+    B -->|Consumer Group| C[Worker]
+    C -->|Save Data| D[(PostgreSQL)]
+    C -->|PubSub Update| B
+    E[Backend API] -->|Read Data| D
+    E -->|Subscribe| B
+    F[Frontend] -->|WebSocket| E
+    F -->|REST API| E
+```
+
+## 4. Model Strategy
+
+The system utilizes a Strategy Pattern for text analysis, allowing seamless switching between different inference providers:
+
+1.  **Local Inference (Hugging Face DistilBERT)**: Default mode. Provides low-latency, zero-cost processing by running models locally on the worker container. Ideal for high-throughput, basic sentiment classification.
+2.  **External API (Groq/OpenAI)**: Enabled when the `USE_EXTERNAL_LLM` environment variable is set to `true`. Provides high-accuracy, complex reasoning, and better nuance detection (e.g., sarcasm or specific emotions) using state-of-the-art Large Language Models.
+

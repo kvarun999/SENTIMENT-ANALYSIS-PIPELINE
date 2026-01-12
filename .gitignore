@@ -1,0 +1,57 @@
+# --- General & System ---
+.DS_Store
+Thumbs.db
+*.log
+.env
+.env.local
+.env.*
+!.env.example
+
+# --- Python (Backend, Worker, Ingester) ---
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+.local
+*.egg-info/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# --- Testing & Coverage (Python) ---
+.tox/
+.coverage
+.coverage.*
+coverage.xml
+nosetests.xml
+htmlcov/
+.pytest_cache/
+
+# --- Node.js / Frontend ---
+node_modules/
+dist/
+build/
+.eslintcache
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# --- Docker ---
+docker-compose.override.yml
+
+# --- IDEs & Editors ---
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# --- Optional: Database Volumes ---
+# If you ever map postgres data to a local folder instead of a volume
+postgres_data/
